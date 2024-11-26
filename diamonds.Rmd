@@ -1,0 +1,137 @@
+---
+title: "Diamonds"
+author: "Kirpa Kaur, Chehak Arora, Sanika Gokakkar, Sahana Krishna Murthy, Hyunseok Lee, Jessica Ezemba"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Installing and loading the necesarry libraries
+
+```{r}
+# install.packages("tidyverse")
+# install.packages("caret")
+# install.packages("randomForest")
+```
+
+```{r}
+library(tidyverse)  
+library(caret)    
+library(randomForest) 
+```
+
+## Loading and Preprocessing the data
+
+
+```{r}
+diamonds <- read.csv("diamonds.csv")
+
+cat("Structure of the diamonds dataset:\n")
+str(diamonds)
+cat("\nFirst few rows of the dataset:\n")
+head(diamonds)
+```
+
+```{r}
+#converting the categorical data into factors
+diamonds$cut <- factor(diamonds$cut, levels = c("Fair", "Good", "Very Good", "Premium", "Ideal"))
+diamonds$color <- factor(diamonds$color, levels = c("J", "I", "H", "G", "F", "E", "D"))
+diamonds$clarity <- factor(diamonds$clarity, levels = c("I1", "SI1", "SI2", "VS1", "VS2", "VVS1", "VVS2", "IF"))
+```
+
+```{r}
+cat("Number of missing values per column:\n")
+print(colSums(is.na(diamonds)))
+```
+
+```
+shows that there are no missing values
+```
+
+## Splitting data into test and trainin sets
+
+```{r}
+set.seed(123)  
+trainIndex <- createDataPartition(diamonds$price, p = 0.8, list = FALSE)
+trainData <- diamonds[trainIndex, ]
+testData <- diamonds[-trainIndex, ]
+
+cat("Training set size: ", nrow(trainData), "\n")
+cat("Test set size: ", nrow(testData), "\n")
+```
+### Starting first with linear methods
+## Linear Regression 
+
+```{r}
+# Training a linear regression model
+model_lr <- lm(price ~ carat + cut + color + clarity + x + y + z + table + depth, data = trainData)
+cat("Linear Regression Model Summary:\n")
+summary(model_lr)
+```
+
+```{r}
+# predictions on the test set
+predictions <- predict(model_lr, newdata = testData)
+cat("Model Performance Metrics:\n")
+
+
+rmse <- sqrt(mean((predictions - testData$price)^2))
+cat("Root Mean Squared Error (RMSE): ", rmse, "\n")
+rsq <- cor(predictions, testData$price)^2
+cat("R-squared: ", rsq, "\n")
+
+# Plot actual vs predicted prices
+plot(predictions, testData$price, main = "Predicted vs Actual Prices", 
+     xlab = "Predicted Price", ylab = "Actual Price", col = "blue", pch = 16)
+abline(0, 1, col = "red")
+```
+
+## Random Forest 
+
+just trying
+
+```{r}
+# Training a Random Forest model 
+model_rf <- randomForest(price ~ carat + cut + color + clarity + x + y + z + table + depth, 
+                         data = trainData)
+
+# print(model_rf)
+cat("Random Forest Model Summary:\n")
+print(model_rf)
+cat("Feature Importance:\n")
+print(model_rf$importance)
+```
+
+Note: this is taking forever
+
+```{r}
+# Making predictions on the test set
+predictions <- predict(model_rf, newdata = testData)
+
+cat("First few predictions vs actual values:\n")
+comparison <- data.frame(Actual = testData$price, Predicted = predictions)
+print(head(comparison))
+
+# Calculating the performance metrics: RMSE, R-squared
+rmse <- sqrt(mean((predictions - testData$price)^2))
+rsq <- cor(predictions, testData$price)^2
+
+cat("Root Mean Squared Error (RMSE):", rmse, "\n")
+cat("R-squared:", rsq, "\n")
+```
+
+```{r}
+# Visualizing predictions vs actual values
+plot(predictions, testData$price, main = "Predicted vs Actual Prices", 
+     xlab = "Predicted Price", ylab = "Actual Price", col = "blue", pch = 16)
+abline(0, 1, col = "red")
+
+# Residual plot
+residuals <- predictions - testData$price
+plot(predictions, residuals, main = "Residuals Plot", 
+     xlab = "Predicted Price", ylab = "Residuals", col = "green", pch = 16)
+abline(h = 0, col = "red")
+```

@@ -70,6 +70,8 @@ cat("Test set size: ", nrow(testData), "\n")
 model_lr <- lm(price ~ carat + cut + color + clarity + x + y + z + table + depth, data = trainData)
 cat("Linear Regression Model Summary:\n")
 summary(model_lr)
+average_price <- mean(diamonds$price)
+cat("The average price of diamonds is:", average_price, "\n")
 ```
 
 ```{r}
@@ -134,4 +136,91 @@ residuals <- predictions - testData$price
 plot(predictions, residuals, main = "Residuals Plot", 
      xlab = "Predicted Price", ylab = "Residuals", col = "green", pch = 16)
 abline(h = 0, col = "red")
+```
+
+
+```{r}
+# QQ plot 
+qqnorm(residuals, main = "QQ Plot of Residuals")
+qqline(residuals, col = "red")
+
+#multicollinrarity 
+library(car)
+vif(model_lr) #vif >5 would indicate mullticollinearity
+
+```
+
+```{r}
+library(rpart)
+library(rpart.plot)
+# Train the decision tree model
+model_tree <- rpart(price ~ carat + cut + color + clarity + x + y + z + table + depth, 
+                    data = trainData, 
+                    method = "anova")
+
+# Summary of the decision tree model
+cat("Decision Tree Model Summary:\n")
+print(model_tree)
+rpart.plot(model_tree, type = 2, fallen.leaves = TRUE, main = "Decision Tree for Diamond Prices")
+```
+
+```{r}
+# Predictions
+predictions_tree <- predict(model_tree, newdata = testData)
+
+# Performance Metrics
+rmse_tree <- sqrt(mean((predictions_tree - testData$price)^2))
+rsq_tree <- cor(predictions_tree, testData$price)^2
+
+cat("Decision Tree RMSE:", rmse_tree, "\n")
+cat("Decision Tree R-squared:", rsq_tree, "\n")
+```
+Comparing it to average price, this is an okay model buut we could do better. 
+```{r}
+# install.packages("xgboost")
+library(xgboost)
+# Convert categorical variables to numeric
+trainData_xgb <- trainData %>%
+  mutate(across(where(is.factor), as.numeric))
+testData_xgb <- testData %>%
+  mutate(across(where(is.factor), as.numeric))
+
+# Prepare matrix format
+train_matrix <- as.matrix(trainData_xgb[, -which(names(trainData_xgb) == "price")])
+train_labels <- trainData_xgb$price
+test_matrix <- as.matrix(testData_xgb[, -which(names(testData_xgb) == "price")])
+test_labels <- testData_xgb$price
+
+# Train the model
+model_xgb <- xgboost(data = train_matrix, label = train_labels, 
+                     objective = "reg:squarederror", 
+                     nrounds = 100, verbose = 0)
+
+
+# Predictions
+predictions_xgb <- predict(model_xgb, newdata = test_matrix)
+
+# Performance Metrics
+rmse_xgb <- sqrt(mean((predictions_xgb - test_labels)^2))
+rsq_xgb <- cor(predictions_xgb, test_labels)^2
+
+cat("XGBoost RMSE:", rmse_xgb, "\n")
+cat("XGBoost R-squared:", rsq_xgb, "\n")
+```
+
+```{r}
+#log transformations
+model_lr_transformed <- lm(log(price) ~ carat + cut + color + clarity + x + y + z + table + depth, data = trainData)
+# Original distribution of price
+hist(trainData$price, main = "Original Price Distribution", xlab = "Price", col = "skyblue", border = "white")
+
+# Log-transformed distribution of price
+hist(log(trainData$price), main = "Log-Transformed Price Distribution", xlab = "Log(Price)", col = "skyblue", border = "white")
+
+
+```
+
+```{r}
+summary(model_lr) #predictors with p values > 0.05 can be removed. 
+
 ```

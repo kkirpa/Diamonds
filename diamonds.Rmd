@@ -303,9 +303,6 @@ ggplot(model_performance, aes(x = Model, y = Test_RMSE, fill = Model)) +
 
 Diagnostic Plot for Best Model
 ```{r}
-# Let's assume stepwise_model is the best based on MSE comparison
-best_model <- model_xgb
-
 # Predictions from the best model
 predictions_best <- predict(best_model, newdata = test_matrix)
 

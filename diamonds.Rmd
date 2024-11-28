@@ -248,7 +248,7 @@ resp.aic <- predict(bg.aic$BestModel, newdata = testData_bss)
 ```
 ### Model Comparison
 ```{r}
-model_names <- c("Linear regression", "RandomForest", "Decison Tree", "XGBoost", "Bestsubset(BIC)", "Bestsubset(AIC")
+model_names <- c("Linear regression", "RandomForest", "Decison Tree", "XGBoost", "Bestsubset(BIC)", "Bestsubset(AIC)")
 rmse_values <- c(rmse, rmse_rf, rmse_tree, rmse_xgb, rmse_bic, rmse_aic)
 model_performance <- data.frame(
   Model = model_names,
@@ -266,5 +266,7 @@ ggplot(model_performance, aes(x = Model, y = Test_RMSE, fill = Model)) +
   labs(title = "Test RMSE by Model",
        x = "Model",
        y = "Test RMSE") +
-  theme_minimal()
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1) 
+  )
 ```

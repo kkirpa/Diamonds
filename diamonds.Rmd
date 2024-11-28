@@ -18,9 +18,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-library(tidyverse)  
-library(caret)    
-library(randomForest) 
+suppressMessages(library(tidyverse)) 
+suppressMessages(library(caret))    
+suppressMessages(library(randomForest))
+suppressMessages(library(pROC))
 ```
 
 ## Loading and Preprocessing the data
@@ -97,7 +98,7 @@ just trying
 
 ```{r}
 # Training a Random Forest model 
-model_rf <- randomForest(price ~ carat + cut + color + clarity + x + y + z + table + depth, 
+model_rf <- randomForest(price ~ carat + cut + color + clarity + x + y + z + table + depth, ntree= 100,
                          data = trainData)
 
 # print(model_rf)
@@ -118,10 +119,10 @@ comparison <- data.frame(Actual = testData$price, Predicted = predictions)
 print(head(comparison))
 
 # Calculating the performance metrics: RMSE, R-squared
-rmse <- sqrt(mean((predictions - testData$price)^2))
+rmse_rf <- sqrt(mean((predictions - testData$price)^2))
 rsq <- cor(predictions, testData$price)^2
 
-cat("Root Mean Squared Error (RMSE):", rmse, "\n")
+cat("Root Mean Squared Error (RMSE):", rmse_rf, "\n")
 cat("R-squared:", rsq, "\n")
 ```
 
@@ -137,7 +138,6 @@ plot(predictions, residuals, main = "Residuals Plot",
      xlab = "Predicted Price", ylab = "Residuals", col = "green", pch = 16)
 abline(h = 0, col = "red")
 ```
-
 
 ```{r}
 # QQ plot 
@@ -246,10 +246,40 @@ resp.aic <- predict(bg.aic$BestModel, newdata = testData_bss)
 (rmse_aic<-sqrt(mean((testData_bss$y-resp.aic)^2))) # AIC RMSE
 
 ```
+
+Forward and Backward Stepwise Selection
+```{r}
+# Forward Stepwise Selection
+stepwise_model <- step(lm(price ~ 1, data = trainData), 
+                       scope = ~ carat + cut + color + clarity + x + y + z + table + depth,
+                       direction = "both")
+
+cat("Stepwise Model Summary:\n")
+summary(stepwise_model)
+```
+```{r}
+# Predictions from the selected stepwise model
+predictions_best <- predict(stepwise_model, newdata = testData)
+
+# Plot the predicted vs. actual values
+plot(testData$price, predictions_best, main = "Predicted vs Actual Values",
+     xlab = "Actual Price", ylab = "Predicted Price", col = "blue", pch = 16)
+abline(0, 1, col = "red")  # Add a 45-degree line for comparison
+```
+
+```{r}
+# MSE for the stepwise model
+mse_stepwise <- mean((predictions_best - testData$price)^2)
+print(mse_stepwise)
+
+# Calculate Root Mean Squared Error (RMSE)
+rmse_stepwise <- sqrt(mse_stepwise)
+print(paste("RMSE for the stepwise model:", round(rmse_stepwise, 2)))
+```
 ### Model Comparison
 ```{r}
-model_names <- c("Linear regression", "RandomForest", "Decison Tree", "XGBoost", "Bestsubset(BIC)", "Bestsubset(AIC)")
-rmse_values <- c(rmse, rmse_rf, rmse_tree, rmse_xgb, rmse_bic, rmse_aic)
+model_names <- c("Linear regression", "RandomForest", "Decison Tree", "XGBoost", "Bestsubset(BIC)", "Bestsubset(AIC)", "StepwiseSelection")
+rmse_values <- c(rmse, rmse_rf, rmse_tree, rmse_xgb, rmse_bic, rmse_aic,rmse_stepwise)
 model_performance <- data.frame(
   Model = model_names,
   Test_RMSE = rmse_values
@@ -269,4 +299,18 @@ ggplot(model_performance, aes(x = Model, y = Test_RMSE, fill = Model)) +
   theme_minimal() + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1) 
   )
+```
+
+Diagnostic Plot for Best Model
+```{r}
+# Let's assume stepwise_model is the best based on MSE comparison
+best_model <- model_xgb
+
+# Predictions from the best model
+predictions_best <- predict(best_model, newdata = test_matrix)
+
+# Diagnostic Plot
+plot(testData$price, predictions_best, main = "Predicted vs Actual Values",
+     xlab = "Actual Price", ylab = "Predicted Price", col = "blue", pch = 16)
+abline(0, 1, col = "red")  # Add a 45-degree line for comparison
 ```

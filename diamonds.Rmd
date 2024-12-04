@@ -52,7 +52,7 @@ print(colSums(is.na(diamonds)))
 shows that there are no missing values
 ```
 
-## Splitting data into test and trainin sets
+## Splitting data into test and training sets
 
 ```{r}
 set.seed(123)  

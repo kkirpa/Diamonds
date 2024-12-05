@@ -300,11 +300,16 @@ ggplot(model_performance, aes(x = Model, y = Test_RMSE, fill = Model)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1) 
   )
 ```
-
 Diagnostic Plot for Best Model
 ```{r}
 # Predictions from the best model
-predictions_best <- predict(best_model, newdata = test_matrix)
+if (best_model_name == "XGBoost") {
+  # Special case for xgboost (matrix format required)
+  predictions_best <- predict(best_model_object, newdata = test_matrix)
+} else {
+  predictions_best <- predict(best_model_object, newdata = testData)
+}
+
 
 # Diagnostic Plot
 plot(testData$price, predictions_best, main = "Predicted vs Actual Values",

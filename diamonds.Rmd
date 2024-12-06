@@ -28,7 +28,7 @@ suppressMessages(library(pROC))
 
 
 ```{r}
-diamonds <- read.csv("C:/Users/Hyunseok/Downloads/diamonds (2).csv")
+diamonds <- read.csv("diamonds.csv")
 
 cat("Structure of the diamonds dataset:\n")
 str(diamonds)

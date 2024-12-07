@@ -325,3 +325,77 @@ plot(testData$price, predictions_best, main = "Predicted vs Actual Values",
      xlab = "Actual Price", ylab = "Predicted Price", col = "blue", pch = 16)
 abline(0, 1, col = "red")  # Add a 45-degree line for comparison
 ```
+
+```{r}
+
+# Convert price into a binary classification high vs. low price
+median_price <- median(diamonds$price)
+trainData$price_bin <- ifelse(trainData$price > median(trainData$price), 1, 0)
+testData$price_bin <- ifelse(testData$price > median(testData$price), 1, 0)
+
+# Re-train models 
+# Random Forest
+
+model_rf_bin <- randomForest(price_bin ~ carat + cut + color + clarity + x + y + z + table + depth, 
+                             data = trainData, 
+                             ntree = 100)
+pred_probs <- predict(model_rf_bin, newdata = testData, type = "prob")
+```
+
+```{r}
+# Decision Tree for binary classification
+model_tree_bin <- rpart(price_bin ~ carat + cut + color + clarity + x + y + z + table + depth, 
+                        data = trainData, method = "class")
+pred_tree <- predict(model_tree_bin, newdata = testData, type = "prob")[, 2]
+```
+
+```{r}
+# XGBoost for binary classification
+model_xgb_bin <- xgboost(data = train_matrix, label = trainData$price_binary, 
+                         objective = "binary:logistic", nrounds = 100, verbose = 0)
+pred_xgb <- predict(model_xgb_bin, newdata = test_matrix)
+```
+
+```{r}
+# Best Subset Selection (BIC)
+model_bic_bin <- glm(price_bin ~ carat + cutGood + cutVeryGood + cutPremium + cutIdeal + depth + x + Y, 
+                     data = trainData, family = binomial)
+pred_bic <- predict(model_bic_bin, newdata = testData, type = "response")
+```
+
+```{r}
+# Best Subset Selection (AIC)
+model_aic_bin <- glm(price_bin ~ carat + cut + clarity + depth + x + Y, 
+                     data = trainData, family = binomial)
+pred_aic <- predict(model_aic_bin, newdata = testData, type = "response")
+```
+
+```{r}
+# Stepwise Selection Model
+stepwise_model_bin <- step(glm(price_bin ~ 1, data = trainData, family = binomial),
+                           scope = ~ carat + cut + color + clarity + x + y + z + table + depth,
+                           direction = "both")
+pred_stepwise <- predict(stepwise_model_bin, newdata = testData, type = "response")
+```
+
+```{r}
+# ROC Curve Analysis
+roc_rf <- roc(testData$price_binary, pred_rf)
+roc_tree <- roc(testData$price_binary, pred_tree)
+roc_xgb <- roc(testData$price_binary, pred_xgb)
+roc_bic <- roc(testData$price_binary, pred_bic)
+roc_aic <- roc(testData$price_binary, pred_aic)
+roc_stepwise <- roc(testData$price_binary, pred_stepwise)
+
+# Plot ROC Curves
+plot(roc_rf, col = "green", lwd = 2, main = "ROC Curves for Models")
+plot(roc_tree, col = "orange", lwd = 2, add = TRUE)
+plot(roc_xgb, col = "red", lwd = 2, add = TRUE)
+plot(roc_bic, col = "blue", lwd = 2, add = TRUE)
+plot(roc_aic, col = "purple", lwd = 2, add = TRUE)
+plot(roc_stepwise, col = "brown", lwd = 2, add = TRUE)
+
+legend("bottomright", legend = c("Random Forest", "Decision Tree", "XGBoost", 
+                                 "Best Subset (BIC)", "Best Subset (AIC)", "Stepwise"),
+       col = c("green", "orange", "red", "blue", "purple", "brown"), lwd = 2)
+

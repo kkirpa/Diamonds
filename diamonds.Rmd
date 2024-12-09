@@ -212,7 +212,9 @@ rsq_tree <- signif(cor(predictions_tree, testData$price)^2, 3)
 cat("Decision Tree RMSE:", rmse_tree, "\n")
 cat("Decision Tree R-squared:", rsq_tree, "\n")
 ```
-Comparing it to average price, this is an okay model buut we could do better. 
+Comparing it to average price, this is an okay model buut we could do better.
+
+## Current xgboost
 ```{r}
 # install.packages("xgboost")
 library(xgboost)
@@ -244,6 +246,65 @@ rsq_xgb <- signif(cor(predictions_xgb, test_labels)^2, 3)
 cat("XGBoost RMSE:", rmse_xgb, "\n")
 cat("XGBoost R-squared:", rsq_xgb, "\n")
 ```
+
+## Class XGBoost
+```{r}
+suppressMessages(library(xgboost))
+suppressMessages(library(tidyverse)) 
+# Loading Data
+df <- read.csv("diamonds.csv")
+
+#converting the categorical data into factors
+df$cut <- as.factor(df$cut)
+df$color <- as.factor(df$color)
+df$clarity <- as.factor(df$clarity)
+
+# Apply log in Price
+df$price <- log(df$price)
+# Splitting Data again
+set.seed(123)
+s <- sample(nrow(df),round(0.7*nrow(df)))
+df.train <- df[s,]
+df.test  <- df[-s,]
+
+# Convert categorical variables to numeric
+trainData_xgb <- df.train %>%
+  mutate(across(where(is.factor), as.numeric))
+testData_xgb <- df.test %>%
+  mutate(across(where(is.factor), as.numeric))
+
+resp.train <- trainData_xgb %>% select(., price) %>% pull(.)
+resp.test  <- testData_xgb %>% select(., price) %>% pull(.)
+pred.train <- trainData_xgb %>% select(., -price)
+pred.test  <- testData_xgb %>% select(., -price)
+
+train <- xgb.DMatrix(data=as.matrix(pred.train),label=resp.train)
+test <- xgb.DMatrix(data=as.matrix(pred.test),label=resp.test)
+xgb.cv.out <- xgb.cv(params=list(objective="reg:squarederror"),train,nrounds=2000,nfold=5,verbose=0)
+rmse.min <- xgb.cv.out$evaluation_log$test_rmse_mean
+cat("The optimal number of trees is ",which.min(rmse.min),"\n")
+
+```
+```{r}
+xgb.out <- xgboost(train,nrounds=which.min(rmse.min),params=list(objective="reg:squarederror"),verbose=0)
+resp.pred <- predict(xgb.out,newdata=test)
+
+# Performance Metrics
+rmse_xgb <- signif(sqrt(mean((resp.pred - resp.test)^2)), 3)
+rsq_xgb <- signif(cor(resp.pred, resp.test)^2, 3)
+
+cat("XGBoost RMSE:", rmse_xgb, "\n")
+cat("XGBoost R-squared:", rsq_xgb, "\n")
+
+```
+```{r}
+
+plot(resp.test, resp.pred, main = "Predicted vs Actual Values",
+     xlab = "Actual Price", ylab = "Predicted Price", col = "brown2", pch = 16)
+abline(0, 1, col = "brown4")  # 45-degree line for comparison
+
+```
+
 
 ```{r}
 #log transformations

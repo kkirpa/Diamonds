@@ -218,6 +218,21 @@ plot(predictions_xgb, residuals_xgb,
      col = "darkgreen", pch = 16)  
 abline(h = 0, col = "red", lwd = 2) 
 ```
+```{r}
+# Histogram of residuals
+hist(residuals_xgb, main = "Residuals Distribution (XGBoost)",
+     xlab = "Residuals", col = "maroon", border = "white")
+
+
+qqnorm(residuals_xgb, main = "Q-Q Plot of Residuals (XGBoost)")
+qqline(residuals_xgb, col = "maroon")
+
+
+
+```
+
+
+
 
 ```{r}
 #log transformations

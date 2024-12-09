@@ -66,6 +66,41 @@ testData <- diamonds[-trainIndex, ]
 cat("Training set size: ", nrow(trainData), "\n")
 cat("Test set size: ", nrow(testData), "\n")
 ```
+
+```{r}
+# Visualizing Predictor Distributions
+library(ggplot2)
+library(gridExtra)
+
+# Facet plot: Predictor distributions (histograms)
+histogram_plot <- trainData %>%
+  pivot_longer(cols = c(carat, depth, table, x, y, z), names_to = "Variable", values_to = "Value") %>%
+  ggplot(aes(x = Value)) +
+  geom_histogram(binwidth = 0.5, fill = "brown", color = "white") +
+  facet_wrap(~Variable, scales = "free", ncol = 3) +
+  labs(title = "Predictor Distributions",
+       x = "Value",
+       y = "Frequency") +
+  theme_minimal()
+
+# Print the histogram plot
+print(histogram_plot)
+
+# Facet plot: Predictor-response relationships (box plots)
+boxplot_plot <- trainData %>%
+  pivot_longer(cols = c(carat, depth, table, x, y, z), names_to = "Variable", values_to = "Value") %>%
+  ggplot(aes(x = Variable, y = price)) +
+  geom_boxplot(fill = "indianred") +
+  facet_wrap(~Variable, scales = "free", ncol = 3) +
+  labs(title = "Predictor-Response Relationships",
+       x = "Predictor",
+       y = "Log-Transformed Price") +
+  theme_minimal()
+
+# Print the box plot
+print(boxplot_plot)
+```
+
 ### Starting first with linear methods
 ## Linear Regression 
 
@@ -84,15 +119,15 @@ predictions <- predict(model_lr, newdata = testData)
 cat("Model Performance Metrics:\n")
 
 
-rmse <- sqrt(mean((predictions - testData$price)^2))
+rmse <- signif(sqrt(mean((predictions - testData$price)^2)), 3)
 cat("Root Mean Squared Error (RMSE): ", rmse, "\n")
-rsq <- cor(predictions, testData$price)^2
+rsq <- signif(cor(predictions, testData$price)^2, 3)
 cat("R-squared: ", rsq, "\n")
 
 # Plot actual vs predicted prices
 plot(predictions, testData$price, main = "Predicted vs Actual Prices", 
-     xlab = "Predicted Price", ylab = "Actual Price", col = "blue", pch = 16)
-abline(0, 1, col = "red")
+     xlab = "Predicted Price", ylab = "Actual Price", col = "brown2", pch = 16)
+abline(0, 1, col = "brown4")
 ```
 
 ## Random Forest 
@@ -101,7 +136,7 @@ just trying
 
 ```{r}
 # Training a Random Forest model 
-model_rf <- randomForest(price ~ carat + cut + color + clarity + x + y + z + table + depth, ntree= 100,
+model_rf <- randomForest(price ~ carat + cut + color + clarity + x + y + z + table + depth, ntree= 50,
                          data = trainData)
 
 # print(model_rf)
@@ -111,7 +146,7 @@ cat("Feature Importance:\n")
 print(model_rf$importance)
 ```
 
-Note: this is taking forever
+Note: this was taking forever, so using ntree = 50
 
 ```{r}
 # Making predictions on the test set
@@ -122,9 +157,8 @@ comparison <- data.frame(Actual = testData$price, Predicted = predictions)
 print(head(comparison))
 
 # Calculating the performance metrics: RMSE, R-squared
-rmse_rf <- sqrt(mean((predictions - testData$price)^2))
-rsq <- cor(predictions, testData$price)^2
-
+rmse_rf <- signif(sqrt(mean((predictions - testData$price)^2)), 3)
+rsq <- signif(cor(predictions, testData$price)^2, 3)
 cat("Root Mean Squared Error (RMSE):", rmse_rf, "\n")
 cat("R-squared:", rsq, "\n")
 ```
@@ -132,20 +166,20 @@ cat("R-squared:", rsq, "\n")
 ```{r}
 # Visualizing predictions vs actual values
 plot(predictions, testData$price, main = "Predicted vs Actual Prices", 
-     xlab = "Predicted Price", ylab = "Actual Price", col = "blue", pch = 16)
-abline(0, 1, col = "red")
+     xlab = "Predicted Price", ylab = "Actual Price", col = "brown2", pch = 16)
+abline(0, 1, col = "brown4")
 
 # Residual plot
 residuals <- predictions - testData$price
-plot(predictions, residuals, main = "Residuals Plot", 
-     xlab = "Predicted Price", ylab = "Residuals", col = "green", pch = 16)
-abline(h = 0, col = "red")
+plot(predictions, residuals, main = "Residuals Plot",
+     xlab = "Predicted Price", ylab = "Residuals", col = "brown2", pch = 16)
+abline(h = 0, col = "maroon")
 ```
 
 ```{r}
 # QQ plot 
 qqnorm(residuals, main = "QQ Plot of Residuals")
-qqline(residuals, col = "red")
+qqline(residuals, col = "indianred")
 
 #multicollinrarity 
 library(car)
@@ -172,8 +206,8 @@ rpart.plot(model_tree, type = 2, fallen.leaves = TRUE, main = "Decision Tree for
 predictions_tree <- predict(model_tree, newdata = testData)
 
 # Performance Metrics
-rmse_tree <- sqrt(mean((predictions_tree - testData$price)^2))
-rsq_tree <- cor(predictions_tree, testData$price)^2
+rmse_tree <- signif(sqrt(mean((predictions_tree - testData$price)^2)), 3)
+rsq_tree <- signif(cor(predictions_tree, testData$price)^2, 3)
 
 cat("Decision Tree RMSE:", rmse_tree, "\n")
 cat("Decision Tree R-squared:", rsq_tree, "\n")
@@ -204,8 +238,8 @@ model_xgb <- xgboost(data = train_matrix, label = train_labels,
 predictions_xgb <- predict(model_xgb, newdata = test_matrix)
 
 # Performance Metrics
-rmse_xgb <- sqrt(mean((predictions_xgb - test_labels)^2))
-rsq_xgb <- cor(predictions_xgb, test_labels)^2
+rmse_xgb <- signif(sqrt(mean((predictions_xgb - test_labels)^2)), 3)
+rsq_xgb <- signif(cor(predictions_xgb, test_labels)^2, 3)
 
 cat("XGBoost RMSE:", rmse_xgb, "\n")
 cat("XGBoost R-squared:", rsq_xgb, "\n")
@@ -215,11 +249,10 @@ cat("XGBoost R-squared:", rsq_xgb, "\n")
 #log transformations
 model_lr_transformed <- lm(log(price) ~ carat + cut + color + clarity + x + y + z + table + depth, data = trainData)
 # Original distribution of price
-hist(trainData$price, main = "Original Price Distribution", xlab = "Price", col = "skyblue", border = "white")
+hist(trainData$price, main = "Original Price Distribution", xlab = "Price", col = "coral3", border = "brown4")
 
 # Log-transformed distribution of price
-hist(log(trainData$price), main = "Log-Transformed Price Distribution", xlab = "Log(Price)", col = "skyblue", border = "white")
-
+hist(log(trainData$price), main = "Log-Transformed Price Distribution", xlab = "Log(Price)", col = "coral3", border = "brown4")
 
 ```
 
@@ -241,19 +274,19 @@ library(bestglm)
 bg.bic <- bestglm(trainData_bss, family = gaussian, IC="BIC")
 bg.bic$BestModel # selected variables : ccutGood, cutVery Good, cutPremium, cutIdeal, depth, x, Y
 resp.bic <- predict(bg.bic$BestModel, newdata = testData_bss)
-(rmse_bic<-sqrt(mean((testData_bss$y-resp.bic)^2))) # BIC RMSE
+(rmse_bic<-signif(sqrt(mean((testData_bss$y-resp.bic)^2)), 3)) # BIC RMSE
   
 bg.aic <- bestglm(trainData_bss, family = gaussian, IC ="AIC")
 bg.aic$BestModel # selected variables : X, carat, cutGood ,cutVery Good ,cutPremium ,cutIdeal ,claritySI1,claritySI2    clarityVS1    clarityVS2   clarityVVS1   clarityVVS2     clarityIF, depth, x, Y
 resp.aic <- predict(bg.aic$BestModel, newdata = testData_bss)
-(rmse_aic<-sqrt(mean((testData_bss$y-resp.aic)^2))) # AIC RMSE
+(rmse_aic<-signif(sqrt(mean((testData_bss$y-resp.aic)^2)), 3)) # AIC RMSE
 
 plot(resp.bic, testData_bss$y, main = "BIC_Predicted vs Actual Values",
-     xlab = "Actual Price", ylab = "Predicted Price", col = "darkseagreen", pch = 16)
-abline(0, 1, col = "red")
+     xlab = "Actual Price", ylab = "Predicted Price", col = "coral", pch = 16)
+abline(0, 1, col = "indianred")
 plot(resp.aic, testData_bss$y, main = "AIC_Predicted vs Actual Values",
-     xlab = "Actual Price", ylab = "Predicted Price", col = "darkseagreen1", pch = 16)
-abline(0, 1, col = "red")
+     xlab = "Actual Price", ylab = "Predicted Price", col = "coral3", pch = 16)
+abline(0, 1, col = "maroon")
 ```
 
 Forward and Backward Stepwise Selection
@@ -272,8 +305,8 @@ predictions_best <- predict(stepwise_model, newdata = testData)
 
 # Plot the predicted vs. actual values
 plot(testData$price, predictions_best, main = "Predicted vs Actual Values",
-     xlab = "Actual Price", ylab = "Predicted Price", col = "blue", pch = 16)
-abline(0, 1, col = "red")  # Add a 45-degree line for comparison
+     xlab = "Actual Price", ylab = "Predicted Price", col = "indianred2", pch = 16)
+abline(0, 1, col = "brown4")  # Add a 45-degree line for comparison
 ```
 
 ```{r}
@@ -282,7 +315,7 @@ mse_stepwise <- mean((predictions_best - testData$price)^2)
 print(mse_stepwise)
 
 # Calculate Root Mean Squared Error (RMSE)
-rmse_stepwise <- sqrt(mse_stepwise)
+rmse_stepwise <- signif(sqrt(mse_stepwise), 3)
 print(paste("RMSE for the stepwise model:", round(rmse_stepwise, 2)))
 ```
 ### Model Comparison
@@ -300,8 +333,9 @@ best_model <- model_performance[which.min(model_performance$Test_RMSE), ]
 cat("Best model is ", best_model$Model, "and test MSE is ", best_model$Test_RMSE,"\n")
 
 # Plot
-ggplot(model_performance, aes(x = Model, y = Test_RMSE, fill = Model)) +
+ggplot(model_performance, aes(x = Model, y = Test_RMSE, fill = Test_RMSE)) +
   geom_bar(stat = "identity") +
+  scale_fill_gradient(low = "brown1", high = "brown4") +
   labs(title = "Test RMSE by Model",
        x = "Model",
        y = "Test RMSE") +
@@ -312,17 +346,48 @@ ggplot(model_performance, aes(x = Model, y = Test_RMSE, fill = Model)) +
 Diagnostic Plot for Best Model
 ```{r}
 # Predictions from the best model
-if (best_model_name == "XGBoost") {
-  # Special case for xgboost (matrix format required)
-  predictions_best <- predict(best_model_object, newdata = test_matrix)
-} else {
+# if (best_model_name == "XGBoost") {
+#   # Special case for xgboost (matrix format required)
+#   predictions_best <- predict(best_model_object, newdata = test_matrix)
+# } else {
+#   predictions_best <- predict(best_model_object, newdata = testData)
+# }
+# 
+# 
+# # Diagnostic Plot
+# plot(testData$price, predictions_best, main = "Predicted vs Actual Values",
+#      xlab = "Actual Price", ylab = "Predicted Price", col = "brown2", pch = 16)
+# abline(0, 1, col = "brown4")  # Add a 45-degree line for comparison
+```
+was getting this error here: Error: object 'best_model_object' not found
+
+wrote updated code for that action below:
+
+```{r}
+# Identifying the best model
+best_model_name <- best_model$Model
+
+# Assigning the best model object based on the name
+if (best_model_name == "Linear regression") {
+  best_model_object <- model_lr
+  predictions_best <- predict(best_model_object, newdata = testData)
+} else if (best_model_name == "RandomForest") {
+  best_model_object <- model_rf
+  predictions_best <- predict(best_model_object, newdata = testData)
+} else if (best_model_name == "Decison Tree") {
+  best_model_object <- model_tree
+  predictions_best <- predict(best_model_object, newdata = testData)
+} else if (best_model_name == "XGBoost") {
+  best_model_object <- model_xgb
+  predictions_best <- predict(best_model_object, newdata = test_matrix) # Use matrix for XGBoost
+} else if (best_model_name == "StepwiseSelection") {
+  best_model_object <- stepwise_model
   predictions_best <- predict(best_model_object, newdata = testData)
 }
 
-
 # Diagnostic Plot
 plot(testData$price, predictions_best, main = "Predicted vs Actual Values",
-     xlab = "Actual Price", ylab = "Predicted Price", col = "blue", pch = 16)
-abline(0, 1, col = "red")  # Add a 45-degree line for comparison
+     xlab = "Actual Price", ylab = "Predicted Price", col = "brown2", pch = 16)
+abline(0, 1, col = "brown4")  # 45-degree line for comparison
 ```
 

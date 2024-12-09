@@ -261,6 +261,10 @@ df$clarity <- as.factor(df$clarity)
 
 # Apply log in Price
 df$price <- log(df$price)
+
+# Remove Index
+df %>% select(., -X) -> df
+
 # Splitting Data again
 set.seed(123)
 s <- sample(nrow(df),round(0.7*nrow(df)))
@@ -305,6 +309,66 @@ abline(0, 1, col = "brown4")  # 45-degree line for comparison
 
 ```
 
+```{r fig.align='center',fig.height=4,fig.width=4}
+# Adjusting the appearance of the importance plot
+library(xgboost)
+library(ggplot2)
+
+# Get feature importance
+imp.out <- xgb.importance(model = xgb.out)
+
+# Convert to a data frame for ggplot
+imp.data <- as.data.frame(imp.out)
+
+# Create a ggplot bar plot for feature importance
+ggplot(imp.data, aes(x = reorder(Feature, Gain), y = Gain)) +
+  geom_bar(stat = "identity", fill = "#a50f15", color = "black", width = 0.7) +
+  coord_flip() +  # Flip coordinates to make horizontal bars
+  labs(
+    title = "Feature Importance",
+    x = "Feature",
+    y = "Importance (Gain)"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+    axis.title = element_text(face = "bold"),
+    axis.text = element_text(size = 10)
+  )
+
+ggsave("feature_importance_plot.png", dpi = 300, width = 6, height = 4)
+
+```
+
+```{r}
+library(ggplot2)
+
+# Combine actual and predicted values into a data frame
+plot_data <- data.frame(
+  ActualPrice = resp.test,
+  PredictedPrice = resp.pred
+)
+
+# Create the plot
+ggplot(plot_data, aes(x = ActualPrice, y = PredictedPrice)) +
+  geom_point(color = "#a50f15", alpha = 0.6, size = 2) +  # Scatter plot points
+  geom_abline(intercept = 0, slope = 1, color = "#67000d", linetype = "dashed", size = 1) +  # 45-degree line
+  labs(
+    title = "Predicted vs Actual Values",
+    x = "Actual Price",
+    y = "Predicted Price"
+  ) +
+  theme_minimal(base_size = 14) +  # Clean, minimal theme
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 16),  # Center-align title
+    axis.title = element_text(face = "bold"),
+    panel.grid.major = element_line(color = "gray85"),  # Subtle gridlines
+    panel.grid.minor = element_blank()  # Remove minor gridlines
+  )
+
+ggsave("predicted_vs_actual.png", width = 8, height = 6, dpi = 300)
+
+```
 
 ```{r}
 #log transformations

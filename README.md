@@ -21,3 +21,6 @@ This dataset contains information about diamond: their properties and their pric
 
 ### Response
 The dataset contains 53,940 records with a single column for the target variable (`price`).
+
+## Poster (post analysis)
+![Diamonds](https://github.com/user-attachments/assets/24717717-8565-4217-a0a2-328355ee0dab)
